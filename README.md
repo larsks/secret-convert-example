@@ -1,35 +1,34 @@
 # Converting a secret into a different format
 
-This projects uses a script to convert a COSI bucket secret into a format suitable for use with ACM MultiClusterObservability. We use the `image-registry.openshift-image-registry.svc:5000/openshift/tools:latest` image, which is available in any OpenShift cluster and includes both the `oc` and `jq` commands. Our script watches for changes to a specific secret, and on any update it generates a new secret (with `-converted` appended to the original name) in the new format.
+This projects uses a SecretStore and ExternalSecret to convert a COSI bucket secret into a format suitable for use with ACM MultiClusterObservability.
 
 To see this in action:
 
-1. Deploy the code:
+1. Edit `kustomization.yaml` to target a namespace in which you are able to create resources.
 
-    ```
+2. Deploy the code:
+
+    ```sh
     oc apply -k .
     ```
 
-2. In one terminal, watch the logs on the convert-secret pod:
+3. Create the example secret:
 
-    ```
-    oc logs -f deployment/convert-secret
-    ```
-
-3. In another terminal, apply `example-secret-yaml`:
-
-    ```
+    ```sh
     oc apply -f example-secret.yaml
     ```
 
-You should see output like this in the logs:
+You should immediately see a new secret `bucketclaim-example-bucket-converted`:
 
-```
-Error from server (NotFound): secrets "bucketclaim-example-bucket" not found
-sleeping for 10 seconds before retrying
-Error from server (NotFound): secrets "bucketclaim-example-bucket" not found
-sleeping for 10 seconds before retrying
-secret/bucketclaim-example-bucket-converted configured
-```
+```sh
+$ oc extract secret/bucketclaim-example-bucket-converted --to=-
+# thanos.yaml
 
-Make any changes to the source secret and you should see the script wake up and re-apply the transformation.
+type: s3
+config:
+  bucket: fb-bucketbd9d1050-bda8-437f-996b-dde341f5fb72
+  endpoint: s3.infra.oac.ocp.massopen.cloud
+  access_key: ACCESSKEY
+  secret_key: SECRETKEY
+  insecure: false
+```

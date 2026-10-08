@@ -1,0 +1,27 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: bucketclaim-example-bucket-converted
+  namespace: default
+spec:
+  secretStoreRef:
+    name: bucketconverter
+    kind: SecretStore
+  target:
+    name: bucketclaim-example-bucket-converted
+    template:
+      data:
+        thanos.yaml: |
+          {{- $info := .bucketInfo | fromJson }}
+          type: s3
+          config:
+            bucket: {{ $info.spec.bucketName }}
+            endpoint: {{ $info.spec.secretS3.endpoint }}
+            access_key: {{ $info.spec.secretS3.accessKeyID }}
+            secret_key: {{ $info.spec.secretS3.accessSecretKey }}
+            insecure: false
+  data:
+    - secretKey: bucketInfo
+      remoteRef:
+        key: bucketclaim-example-bucket
+        property: BucketInfo
